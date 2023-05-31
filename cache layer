@@ -1,0 +1,21 @@
+#Install the required cache backend:
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+#Add cache decorators to the view:
+from django.views.decorators.cache import cache_page
+
+class PotentialMatchesView(View):
+    @cache_page(60 * 15)  # Cache the response for 15 minutes
+    def get(self, request, user_id):
+# Configure cache middleware:
+MIDDLEWARE = [
+    # ...
+    'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
+    # ...
+]
