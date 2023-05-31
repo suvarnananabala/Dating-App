@@ -1,0 +1,55 @@
+# Create a new Django project
+django-admin startproject dating_app
+
+# Create a new Django app within the project
+cd dating_app
+python manage.py startapp matches
+# matches/models.py
+from django.db import models
+
+class User(models.Model):
+    name = models.CharField(max_length=255)
+    hobbies = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+# matches/views.py
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views import View
+from .models import User
+
+class PotentialMatchesView(View):
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        matches = User.objects.exclude(id=user_id).all()
+
+        potential_matches = []
+        for match in matches:
+            common_hobbies = set(user.hobbies.split(",")) & set(match.hobbies.split(","))
+            match.compatibility = len(common_hobbies)
+            potential_matches.append(match)
+
+        potential_matches = sorted(potential_matches, key=lambda x: x.compatibility, reverse=True)
+
+        response = []
+        for match in potential_matches:
+            response.append({
+                "id": match.id,
+                "name": match.name,
+                "hobbies": match.hobbies.split(","),
+                "compatibility": match.compatibility
+            })
+
+        return JsonResponse(response, safe=False)
+# dating_app/urls.py
+from django.urls import path
+from matches.views import PotentialMatchesView
+
+urlpatterns = [
+    path('match/<int:user_id>/', PotentialMatchesView.as_view(), name='potential-matches'),
+]
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver
